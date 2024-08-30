@@ -19,7 +19,7 @@ jobs:
       - name: Check if version has changed
         id: check_version
         run: |
-          VERSION=$(grep -oP "Version:\s*\K\d+(\.\d+)*" wcpos-email-invoice.php)
+          VERSION=$(grep -oP "Version:\s*\K\d+(\.\d+)*" wcpos-web-checkout.php)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           git fetch --prune --unshallow
           if git tag | grep -q "v$VERSION"; then
