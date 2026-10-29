@@ -49,7 +49,16 @@ jobs:
       - name: Build and upload ZIP
         if: steps.check_version.outputs.release == 'true'
         run: |
-          zip -r woocommerce-pos-web-checkout-gateway.zip . -x "*.git*"
+          # WordPress 7.1.4+ unpacks packages into a randomly suffixed folder and installs a flat zip
+          # there, so the zip must hold the installed folder (catalog slug) as its only top-level entry.
+          mkdir -p "$RUNNER_TEMP/stage/woocommerce-pos-web-checkout-gateway"
+          rsync -a --exclude='.git*' ./ "$RUNNER_TEMP/stage/woocommerce-pos-web-checkout-gateway/"
+          (cd "$RUNNER_TEMP/stage" && zip -r "$GITHUB_WORKSPACE/woocommerce-pos-web-checkout-gateway.zip" "woocommerce-pos-web-checkout-gateway" -x "*.git*")
+          TOP_LEVEL=$(unzip -Z1 woocommerce-pos-web-checkout-gateway.zip | cut -d/ -f1 | sort -u)
+          if [ "$TOP_LEVEL" != "woocommerce-pos-web-checkout-gateway" ]; then
+            echo "::error::woocommerce-pos-web-checkout-gateway.zip must contain only woocommerce-pos-web-checkout-gateway/ at the top level, found: $TOP_LEVEL"
+            exit 1
+          fi
           gh release upload v${{ env.VERSION }} woocommerce-pos-web-checkout-gateway.zip --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
